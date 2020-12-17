@@ -76,12 +76,12 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
 
-    def test_delete_id_404(self):
+    def test_delete_id_422(self):
         res = self.client().delete('/questions/1000')
         data = json.loads(res.data)
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 422)
         self.assertFalse(data['success'], False)
-        self.assertEqual(data['message'], 'Resource Not Found')
+        self.assertEqual(data['message'], 'Not Processable')
 
     def test_create_questions(self):
         res = self.client().post('/questions', json={'question': 'fwd fwd fwd','answer': 'fwd fwd fwd','difficulty': 1,'category': 1})
