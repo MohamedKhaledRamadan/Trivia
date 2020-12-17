@@ -81,15 +81,17 @@ def create_app(test_config=None):
   '''
   @app.route('/questions/<int:question_id>', methods=['DELETE'])
   def delete_question(question_id):
-    question = Question.query.filter(Question.id == question_id).one_or_none()
-    if question is None:
-      abort(404)
-
     try:
+      question = Question.query.filter(Question.id == question_id).one_or_none()
+      if question is None:
+        abort(404)
+    
       question.delete()
+      allQuestions = Question.query.order_by(Question.id).all()
       return jsonify({
         'success': True,
-        'deleted_id': question_id
+        'deleted_id': question_id,
+        'total_questions': len(allQuestions)
       })
     except:
       abort(422)
@@ -106,18 +108,17 @@ def create_app(test_config=None):
   @app.route('/questions', methods=['POST'])
   def post_question():
     body = request.get_json()
-    questions = Question.query.order_by(Question.id).all()
     try:
       new_question = body.get('question', None)
-      new_answer = body.get('answer', None)
-      new_difficulty = body.get('difficulty', None)
       new_category = body.get('category', None)
-      question = Question(question=new_question, answer=new_answer,
-                 difficulty=new_difficulty, category=new_category,)
+      new_difficulty = body.get('difficulty', None)
+      new_answer = body.get('answer', None)
+      question = Question(question=new_question, category=new_category, answer=new_answer,
+                 difficulty=new_difficulty,)
       question.insert()
+      questions = Question.query.order_by(Question.id).all()
       return jsonify({
         'success': True,
-        'question_id': question.id,
         'questions': paginate_items(request, questions),
         'total_questions': len(questions)
       })
@@ -180,23 +181,24 @@ def create_app(test_config=None):
   @app.route('/quizzes', methods=['POST'])
   def get_quiz_questions():
     body = request.get_json()
-    previous_questions = body.get('previous_questions')
-    quiz_category = request.get_json()['quiz_category']['id']
-    questions = None
-    if quiz_category == 0:
-      questions = Question.query.all()
+    previous_questions = body.get('previous_questions', None)
+    quiz_category = body.get('quiz_category', None)
+    category_id = quiz_category['id']
+    if category_id == 0:
+      questions = Question.query.filter(Question.id.notin_(previous_questions)).all()
     else:  
-      questions = Question.query.filter_by(category=str(quiz_category))
+      questions = Question.query.filter(Question.id.notin_(previous_questions), Question.category == category_id).all()
 
-    current_question = ''
+    question = None
+    cur_question = ''
     for question in questions:
       if question.id not in previous_questions:
-        current_question = question.format()
+        cur_question = question.format()
         break
 
     return jsonify({
-      'success':True,
-      'question':current_question,
+        'success': True,
+        'question': cur_question,
     })
   '''
   @TODO: 
